@@ -5,7 +5,7 @@ const Home = () => {
     return (
         <div className={styles.container}>
             <div className={styles.main}>
-                This is secure MERN Stack App with JWT-Based User Authentication and Authorization.
+                A full-stack authentication demo with server-verified sessions and protected dashboard routes.
             </div>
         </div>
     )

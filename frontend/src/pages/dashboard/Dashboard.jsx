@@ -1,73 +1,33 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCookies } from "react-cookie";
-import axios from "axios";
-import { toast } from "react-toastify";
-import styles from "./styles.module.scss";
-import { Button, CircularProgress } from "@mui/material";
+import { Button } from "@mui/material";
 import Swal from "sweetalert2";
+import { useAuth } from "../../utils/auth";
+import styles from "./styles.module.scss";
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const [cookies, removeCookie] = useCookies([]);
-    const [username, setUsername] = useState("");
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const { user, logout } = useAuth();
 
-    useEffect(() => {
-        const verifyCookie = async () => {
-            if (!cookies.token) {
-                navigate("/login");
-            }
-            const config = {
-                method: "POST",
-                url: "/user",
-                withCredentials: true,
-            };
-
-            const response = await axios(config);
-            // console.log(response, "dashboard response");
-            const username = response.data.username;
-            setUsername(username);
-            return response.data.success
-                ? (setIsLoggedIn(true), toast.info(`Hello ${username}`))
-                : (removeCookie("token"), navigate("/login"));
-        };
-        verifyCookie();
-        // console.log(cookies, "dashboard cookies");
-    }, [cookies, navigate, removeCookie]);
-
-    const logout = () => {
-        Swal.fire({
-            title: "Do you want to logout?",
-            showDenyButton: true,
+    const handleLogout = async () => {
+        const result = await Swal.fire({
+            title: "Log out?",
             showCancelButton: true,
-            confirmButtonText: "Logout",
-            denyButtonText: `Don't logout`
-        }).then((result) => {
-            if (result.isConfirmed) {
-                removeCookie("token");
-                navigate("/login");
-            }
+            confirmButtonText: "Log out",
+            cancelButtonText: "Stay signed in",
         });
+        if (!result.isConfirmed) return;
+        await logout();
+        navigate("/login", { replace: true });
     };
 
     return (
-        <>
-            {isLoggedIn === false
-                ? <CircularProgress sx={{ padding: "5px" }} />
-                : <>
-
-                    <div className={styles.container}>
-                        <div className={styles.main}>
-                            <h3 className={styles.heading}>Welcome <span>{username}</span></h3>
-                            <Button
-                                className={styles.logoutButton}
-                                onClick={logout} variant="contained"
-                            >LOGOUT</Button>
-                        </div>
-                    </div>
-                </>}
-        </>
+        <div className={styles.container}>
+            <div className={styles.main}>
+                <h3 className={styles.heading}>Welcome <span>{user?.username}</span></h3>
+                <p>You are signed in. Your session is verified by the API.</p>
+                <Button className={styles.logoutButton} onClick={handleLogout} variant="contained">Log out</Button>
+            </div>
+        </div>
     );
 };
 

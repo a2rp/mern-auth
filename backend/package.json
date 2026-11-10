@@ -1,17 +1,23 @@
 {
-    "name": "backend",
+    "name": "mern-auth-api",
     "version": "1.0.0",
-    "description": "",
+    "description": "Express and MongoDB API with bcryptjs password hashing and HttpOnly JWT session cookies.",
     "main": "index.js",
     "scripts": {
         "start": "node index.js",
         "start:dev": "nodemon index.js"
     },
-    "keywords": [],
+    "keywords": [
+        "express",
+        "mongodb",
+        "mongoose",
+        "jwt",
+        "http-only-cookie",
+        "authentication"
+    ],
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "bcrypt": "^5.1.1",
         "bcryptjs": "^2.4.3",
         "cookie-parser": "^1.4.6",
         "cors": "^2.8.5",

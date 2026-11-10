@@ -1,201 +1,121 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
-import { Button, CircularProgress, TextField } from "@mui/material";
-import styles from "./styles.module.scss";
+import { Button, CircularProgress, IconButton, TextField } from "@mui/material";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { useCookies } from "react-cookie";
+import { toast } from "react-toastify";
+import api from "../../utils/api";
+import { useAuth } from "../../utils/auth";
+import styles from "./styles.module.scss";
 
 const Register = () => {
-    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-    const [isLoggedIn, setIsLoggedIn] = useState(true);
-    const [cookies, removeCookie] = useCookies([]);
+    const { login } = useAuth();
+    const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [inputValue, setInputValue] = useState({ email: "", username: "", password: "", confirmPassword: "" });
 
-    useEffect(() => {
-        const verifyCookie = async () => {
-            if (!cookies.token) {
-                navigate("/login");
-            }
-            const config = {
-                method: "POST",
-                url: "/user",
-                withCredentials: true,
-            };
-
-            const response = await axios(config);
-            console.log(response, "dashboard response");
-            if (response.data.success === true) {
-                navigate("/dashboard");
-            } else {
-                setIsLoggedIn(false);
-            }
-        };
-        verifyCookie();
-    }, [cookies, navigate, removeCookie]);
-
-    const [inputValue, setInputValue] = useState({
-        email: "",
-        username: "",
-        password: "",
-        confirmPassword: ""
-    });
-    const [passwordType, setPasswordType] = useState("password");
-    const [confirmPasswordType, setConfirmPasswordType] = useState("password");
-
-    const { email, username, password, confirmPassword } = inputValue;
-    const handleOnChange = (e) => {
-        const { name, value } = e.target;
-        setInputValue({
-            ...inputValue,
-            [name]: value,
-        });
+    const handleOnChange = (event) => {
+        const { name, value } = event.target;
+        setInputValue((current) => ({ ...current, [name]: value }));
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-
+        setIsLoading(true);
         try {
-            const config = {
-                method: "POST",
-                url: "/user/register",
-                withCredentials: true,
-                data: { ...inputValue }
-            };
-            // console.log(config, "config");
-            setIsLoading(true);
-            const response = await axios(config);
-            console.log(response.data, "response");
-            if (response.data.success === true) {
-                toast.success(response.data.message);
-                setInputValue({
-                    ...inputValue,
-                    email: "",
-                    username: "",
-                    password: "",
-                    confirmPassword: ""
-                });
-                navigate("/dashboard");
-            }
+            const { data } = await api.post("/user/register", {
+                ...inputValue,
+                email: inputValue.email.trim(),
+                username: inputValue.username.trim(),
+            });
+            if (!data.success || !data.user) throw new Error(data.message || "Unable to create your account.");
+            login(data.user);
+            toast.success(data.message);
+            navigate("/dashboard", { replace: true });
         } catch (error) {
-            console.log(error);
-            toast.error(error.response.data.message);
+            toast.error(error.response?.data?.message || error.message || "Unable to reach the API.");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <>
-            {isLoggedIn === true
-                ? <CircularProgress />
-                : <>
-                    <div className={styles.container}>
-                        <div className={styles.main}>
-                            <h3 className={styles.heading}>Register user</h3>
-                            <form className={styles.form} onSubmit={handleSubmit} noValidate autoComplete="off">
-                                <div className={styles.usernameContainer}>
-                                    <TextField
-                                        value={username}
-                                        onChange={handleOnChange}
-                                        name="username"
-                                        type="text"
-                                        label="Username"
-                                        size="small"
-                                        className={styles.usernameInput}
-                                        inputProps={{
-                                            autoComplete: 'new-password',
-                                            form: {
-                                                autoComplete: 'off',
-                                            },
-                                        }}
-                                    />
-                                </div>
-
-                                <div className={styles.emailContainer}>
-                                    <TextField
-                                        value={email}
-                                        onChange={handleOnChange}
-                                        name="email"
-                                        type="email"
-                                        label="Email address"
-                                        size="small"
-                                        className={styles.emailInput}
-                                        inputProps={{
-                                            autoComplete: 'new-password',
-                                            form: {
-                                                autoComplete: 'off',
-                                            },
-                                        }}
-                                    />
-                                </div>
-
-                                <div className={styles.passwordContainer}>
-                                    <TextField
-                                        value={password}
-                                        onChange={handleOnChange}
-                                        name="password"
-                                        type={passwordType}
-                                        label="Password"
-                                        size="small"
-                                        className={styles.passwordInput}
-                                        inputProps={{
-                                            autoComplete: 'new-password',
-                                            form: {
-                                                autoComplete: 'off',
-                                            },
-                                        }}
-                                    />
-                                    {passwordType === "password"
-                                        ? <FaEyeSlash className={styles.icon} onClick={() => setPasswordType("text")} />
-                                        : <FaEye className={styles.icon} onClick={() => setPasswordType("password")} />
-                                    }
-                                </div>
-
-                                <div className={styles.confirmPasswordContainer}>
-                                    <TextField
-                                        value={confirmPassword}
-                                        onChange={handleOnChange}
-                                        name="confirmPassword"
-                                        type={confirmPasswordType}
-                                        label="Confirm Password"
-                                        size="small"
-                                        className={styles.confirmPasswordInput}
-                                        inputProps={{
-                                            autoComplete: 'new-password',
-                                            form: {
-                                                autoComplete: 'off',
-                                            },
-                                        }}
-                                    />
-                                    {confirmPasswordType === "password"
-                                        ? <FaEyeSlash className={styles.icon} onClick={() => setConfirmPasswordType("text")} />
-                                        : <FaEye className={styles.icon} onClick={() => setConfirmPasswordType("password")} />
-                                    }
-                                </div>
-
-                                <Button
-                                    type="submit"
-                                    variant="contained"
-                                    className={styles.submitButton}
-                                    disabled={isLoading}
-                                >
-                                    {isLoading
-                                        ? <CircularProgress sx={{ padding: "5px" }} />
-                                        : "Submit"}
-                                </Button>
-
-                                <div className={styles.loginLink}>
-                                    Already have an account? <NavLink to={"/login"}>Login</NavLink>
-                                </div>
-                            </form>
-                        </div>
+        <div className={styles.container}>
+            <div className={styles.main}>
+                <h1 className={styles.heading}>Create account</h1>
+                <form className={styles.form} onSubmit={handleSubmit}>
+                    <div className={styles.usernameContainer}>
+                        <TextField
+                            value={inputValue.username}
+                            onChange={handleOnChange}
+                            name="username"
+                            type="text"
+                            label="Username"
+                            autoComplete="username"
+                            size="small"
+                            className={styles.usernameInput}
+                            inputProps={{ minLength: 3, maxLength: 32, pattern: "[A-Za-z0-9_]+" }}
+                            required
+                        />
                     </div>
-                </>}
-        </>
+                    <div className={styles.emailContainer}>
+                        <TextField
+                            value={inputValue.email}
+                            onChange={handleOnChange}
+                            name="email"
+                            type="email"
+                            label="Email address"
+                            autoComplete="email"
+                            size="small"
+                            className={styles.emailInput}
+                            inputProps={{ maxLength: 254 }}
+                            required
+                        />
+                    </div>
+                    <div className={styles.passwordContainer}>
+                        <TextField
+                            value={inputValue.password}
+                            onChange={handleOnChange}
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            label="Password"
+                            autoComplete="new-password"
+                            size="small"
+                            className={styles.passwordInput}
+                            inputProps={{ minLength: 12, maxLength: 128 }}
+                            required
+                        />
+                        <IconButton className={styles.icon} type="button" onClick={() => setShowPassword((shown) => !shown)} aria-label={showPassword ? "Hide password" : "Show password"}>
+                            {showPassword ? <FaEye /> : <FaEyeSlash />}
+                        </IconButton>
+                    </div>
+                    <div className={styles.confirmPasswordContainer}>
+                        <TextField
+                            value={inputValue.confirmPassword}
+                            onChange={handleOnChange}
+                            name="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            label="Confirm password"
+                            autoComplete="new-password"
+                            size="small"
+                            className={styles.confirmPasswordInput}
+                            inputProps={{ minLength: 12, maxLength: 128 }}
+                            required
+                        />
+                        <IconButton className={styles.icon} type="button" onClick={() => setShowConfirmPassword((shown) => !shown)} aria-label={showConfirmPassword ? "Hide confirmation" : "Show confirmation"}>
+                            {showConfirmPassword ? <FaEye /> : <FaEyeSlash />}
+                        </IconButton>
+                    </div>
+                    <p className={styles.passwordHint}>Use 12–128 characters with an uppercase letter, lowercase letter, number, and symbol.</p>
+                    <Button type="submit" variant="contained" className={styles.submitButton} disabled={isLoading}>
+                        {isLoading ? <CircularProgress size={22} /> : "Create account"}
+                    </Button>
+                    <div className={styles.loginLink}>Already have an account? <NavLink to="/login">Log in</NavLink></div>
+                </form>
+            </div>
+        </div>
     );
 };
 
 export default Register;
-
